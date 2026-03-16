@@ -14,6 +14,7 @@ import com.dailystar.dto.SyncRemoteChangeResponse;
 import com.dailystar.entity.AccountSnapshotEntity;
 import com.dailystar.entity.SyncProfileStateEntity;
 import com.dailystar.entity.SyncRecordEntity;
+import com.dailystar.enums.MessageCodeEnum;
 import com.dailystar.enums.SyncResolveStrategy;
 import com.dailystar.exception.BusinessException;
 import com.dailystar.service.SyncService;
@@ -47,7 +48,7 @@ public class SyncServiceImpl implements SyncService {
     @Transactional(rollbackFor = Exception.class)
     public SyncDeltaResponse syncDelta(Long accountId, SyncDeltaRequest request) {
         if (accountId == null) {
-            throw new BusinessException("UNAUTHORIZED", "请先登录");
+            throw new BusinessException(MessageCodeEnum.UNAUTHORIZED);
         }
         String resolvedProfileId = defaultProfileId(request.getProfileId(), "cloud_" + accountId);
         SyncResolveStrategy resolveStrategy = SyncResolveStrategy.from(request.getResolveStrategy());
@@ -78,7 +79,7 @@ public class SyncServiceImpl implements SyncService {
     @Transactional(rollbackFor = Exception.class)
     public SyncProfileResponse syncProfile(Long accountId, SyncProfileRequest request) {
         if (accountId == null) {
-            throw new BusinessException("UNAUTHORIZED", "请先登录");
+            throw new BusinessException(MessageCodeEnum.UNAUTHORIZED);
         }
         AccountSnapshotEntity remote = accountSnapshotDao.selectByAccountId(accountId).orElse(null);
         boolean hasLocalSnapshot = StringUtils.hasText(request.getSnapshotJson()) && request.getSnapshotUpdatedAt() != null;
@@ -149,7 +150,7 @@ public class SyncServiceImpl implements SyncService {
     @Transactional(rollbackFor = Exception.class)
     public void clearProfile(Long accountId) {
         if (accountId == null) {
-            throw new BusinessException("UNAUTHORIZED", "请先登录");
+            throw new BusinessException(MessageCodeEnum.UNAUTHORIZED);
         }
         accountSnapshotDao.deleteByAccountId(accountId);
         syncRecordDao.deleteByAccountId(accountId);

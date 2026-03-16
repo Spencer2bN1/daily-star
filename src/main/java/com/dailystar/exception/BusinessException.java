@@ -1,14 +1,23 @@
 package com.dailystar.exception;
 
+import com.dailystar.enums.MessageCodeEnum;
 import lombok.Getter;
 
 @Getter
 public class BusinessException extends RuntimeException {
 
-    private final String code;
+    private final int code;
+    private final MessageCodeEnum messageCode;
 
-    public BusinessException(String code, String message) {
+    public BusinessException(MessageCodeEnum messageCode) {
+        super(messageCode.getMessage());
+        this.code = messageCode.getCode();
+        this.messageCode = messageCode;
+    }
+
+    public BusinessException(MessageCodeEnum messageCode, String message) {
         super(message);
-        this.code = code;
+        this.code = messageCode.getCode();
+        this.messageCode = messageCode;
     }
 }

@@ -4,6 +4,7 @@ import com.dailystar.dao.UserDao;
 import com.dailystar.dto.UserCreateRequest;
 import com.dailystar.dto.UserResponse;
 import com.dailystar.entity.UserEntity;
+import com.dailystar.enums.MessageCodeEnum;
 import com.dailystar.enums.UserStatusEnum;
 import com.dailystar.exception.BusinessException;
 import com.dailystar.mapper.UserDataMapper;
@@ -38,7 +39,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserById(Long id) {
         UserEntity entity = userDao.selectByPrimaryKey(id)
-            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "用户不存在"));
+            .orElseThrow(() -> new BusinessException(MessageCodeEnum.USER_NOT_FOUND));
         return userDataMapper.toResponse(entity);
     }
 

@@ -1,6 +1,7 @@
 package com.dailystar.component;
 
 import com.dailystar.constant.SecurityConstants;
+import com.dailystar.enums.MessageCodeEnum;
 import com.dailystar.exception.BusinessException;
 import com.dailystar.model.LoginUser;
 import com.dailystar.util.JwtTokenUtil;
@@ -23,7 +24,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String authorization = request.getHeader(SecurityConstants.AUTHORIZATION);
         if (authorization == null || !authorization.startsWith(SecurityConstants.BEARER_PREFIX)) {
-            throw new BusinessException("UNAUTHORIZED", "请先登录");
+            throw new BusinessException(MessageCodeEnum.UNAUTHORIZED);
         }
         String token = authorization.substring(SecurityConstants.BEARER_PREFIX.length()).trim();
         try {
@@ -31,7 +32,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             AuthContextHolder.set(loginUser);
             return true;
         } catch (JwtException | IllegalArgumentException ex) {
-            throw new BusinessException("TOKEN_INVALID", "登录状态已失效，请重新登录");
+            throw new BusinessException(MessageCodeEnum.TOKEN_INVALID);
         }
     }
 

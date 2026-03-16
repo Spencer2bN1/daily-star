@@ -8,6 +8,7 @@ import com.dailystar.dto.AuthRegisterRequest;
 import com.dailystar.entity.AuthAccountEntity;
 import com.dailystar.enums.AuthAccountStatusEnum;
 import com.dailystar.enums.LoginTypeEnum;
+import com.dailystar.enums.MessageCodeEnum;
 import com.dailystar.exception.BusinessException;
 import com.dailystar.model.LoginUser;
 import com.dailystar.service.AuthService;
@@ -30,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(rollbackFor = Exception.class)
     public AuthLoginResponse register(AuthRegisterRequest request) {
         authAccountDao.selectByMobile(request.getMobile()).ifPresent(account -> {
-            throw new BusinessException("MOBILE_EXISTS", "手机号已注册");
+            throw new BusinessException(MessageCodeEnum.MOBILE_EXISTS);
         });
 
         LocalDateTime now = LocalDateTime.now();
@@ -50,12 +51,12 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(rollbackFor = Exception.class)
     public AuthLoginResponse login(AuthLoginRequest request) {
         AuthAccountEntity entity = authAccountDao.selectByMobile(request.getMobile())
-            .orElseThrow(() -> new BusinessException("ACCOUNT_NOT_FOUND", "手机号未注册"));
+            .orElseThrow(() -> new BusinessException(MessageCodeEnum.ACCOUNT_NOT_FOUND, "手机号未注册"));
         if (entity.getStatus() != AuthAccountStatusEnum.ACTIVE) {
-            throw new BusinessException("ACCOUNT_DISABLED", "账号不可用");
+            throw new BusinessException(MessageCodeEnum.ACCOUNT_DISABLED);
         }
         if (!passwordEncoder.matches(request.getPassword(), entity.getPasswordHash())) {
-            throw new BusinessException("PASSWORD_ERROR", "手机号或密码错误");
+            throw new BusinessException(MessageCodeEnum.PASSWORD_ERROR);
         }
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setLastLoginAt(LocalDateTime.now());
@@ -66,10 +67,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthCurrentUserResponse currentUser(Long accountId) {
         if (accountId == null) {
-            throw new BusinessException("UNAUTHORIZED", "请先登录");
+            throw new BusinessException(MessageCodeEnum.UNAUTHORIZED);
         }
         AuthAccountEntity entity = authAccountDao.selectById(accountId)
-            .orElseThrow(() -> new BusinessException("ACCOUNT_NOT_FOUND", "账号不存在"));
+            .orElseThrow(() -> new BusinessException(MessageCodeEnum.ACCOUNT_NOT_FOUND));
         return AuthCurrentUserResponse.builder()
             .accountId(entity.getId())
             .mobile(entity.getMobile())
