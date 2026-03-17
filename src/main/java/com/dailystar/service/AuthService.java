@@ -3,6 +3,7 @@ package com.dailystar.service;
 import com.dailystar.dto.AuthCurrentUserResponse;
 import com.dailystar.dto.AuthLoginRequest;
 import com.dailystar.dto.AuthLoginResponse;
+import com.dailystar.dto.AuthProfileUpdateRequest;
 import com.dailystar.dto.AuthRegisterRequest;
 
 public interface AuthService {
@@ -12,4 +13,6 @@ public interface AuthService {
     AuthLoginResponse login(AuthLoginRequest request);
 
     AuthCurrentUserResponse currentUser(Long accountId);
+
+    AuthCurrentUserResponse updateProfile(Long accountId, AuthProfileUpdateRequest request);
 }

@@ -1,12 +1,16 @@
 package com.dailystar.service.impl;
 
+import com.dailystar.dao.AccountProfileDao;
 import com.dailystar.dao.AuthAccountDao;
 import com.dailystar.dto.AuthCurrentUserResponse;
 import com.dailystar.dto.AuthLoginRequest;
 import com.dailystar.dto.AuthLoginResponse;
+import com.dailystar.dto.AuthProfileUpdateRequest;
 import com.dailystar.dto.AuthRegisterRequest;
+import com.dailystar.entity.AccountProfileEntity;
 import com.dailystar.entity.AuthAccountEntity;
 import com.dailystar.enums.AuthAccountStatusEnum;
+import com.dailystar.enums.GenderEnum;
 import com.dailystar.enums.LoginTypeEnum;
 import com.dailystar.enums.MessageCodeEnum;
 import com.dailystar.exception.BusinessException;
@@ -18,11 +22,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private final AccountProfileDao accountProfileDao;
     private final AuthAccountDao authAccountDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
@@ -44,6 +50,13 @@ public class AuthServiceImpl implements AuthService {
             .lastLoginAt(now)
             .build();
         authAccountDao.insertSelective(entity);
+        accountProfileDao.insertSelective(
+            AccountProfileEntity.builder()
+                .accountId(entity.getId())
+                .createdAt(now)
+                .updatedAt(now)
+                .build()
+        );
         return buildLoginResponse(entity);
     }
 
@@ -71,11 +84,25 @@ public class AuthServiceImpl implements AuthService {
         }
         AuthAccountEntity entity = authAccountDao.selectById(accountId)
             .orElseThrow(() -> new BusinessException(MessageCodeEnum.ACCOUNT_NOT_FOUND));
-        return AuthCurrentUserResponse.builder()
-            .accountId(entity.getId())
-            .mobile(entity.getMobile())
-            .status(entity.getStatus().name())
-            .build();
+        return buildCurrentUserResponse(entity, ensureProfile(entity.getId()));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AuthCurrentUserResponse updateProfile(Long accountId, AuthProfileUpdateRequest request) {
+        if (accountId == null) {
+            throw new BusinessException(MessageCodeEnum.UNAUTHORIZED);
+        }
+        AuthAccountEntity entity = authAccountDao.selectById(accountId)
+            .orElseThrow(() -> new BusinessException(MessageCodeEnum.ACCOUNT_NOT_FOUND));
+        AccountProfileEntity profile = ensureProfile(accountId);
+        GenderEnum gender = resolveGender(request.getGender());
+        profile.setNickname(request.getNickname().trim());
+        profile.setAvatar(request.getAvatar().trim());
+        profile.setGender(gender);
+        profile.setUpdatedAt(LocalDateTime.now());
+        accountProfileDao.updateById(profile);
+        return buildCurrentUserResponse(entity, profile);
     }
 
     private AuthLoginResponse buildLoginResponse(AuthAccountEntity entity) {
@@ -91,5 +118,41 @@ public class AuthServiceImpl implements AuthService {
             .tokenType("Bearer")
             .expiresIn(jwtTokenUtil.getExpireSeconds())
             .build();
+    }
+
+    private AccountProfileEntity ensureProfile(Long accountId) {
+        return accountProfileDao.selectByAccountId(accountId).orElseGet(() -> {
+            LocalDateTime now = LocalDateTime.now();
+            AccountProfileEntity profile = AccountProfileEntity.builder()
+                .accountId(accountId)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+            accountProfileDao.insertSelective(profile);
+            return profile;
+        });
+    }
+
+    private AuthCurrentUserResponse buildCurrentUserResponse(AuthAccountEntity account, AccountProfileEntity profile) {
+        String nickname = profile == null ? null : profile.getNickname();
+        String avatar = profile == null ? null : profile.getAvatar();
+        String gender = profile == null || profile.getGender() == null ? null : profile.getGender().name();
+        return AuthCurrentUserResponse.builder()
+            .accountId(account.getId())
+            .mobile(account.getMobile())
+            .status(account.getStatus().name())
+            .nickname(nickname)
+            .avatar(avatar)
+            .gender(gender)
+            .profileCompleted(StringUtils.hasText(nickname) && StringUtils.hasText(avatar))
+            .build();
+    }
+
+    private GenderEnum resolveGender(String value) {
+        GenderEnum gender = GenderEnum.fromCode(value);
+        if (value != null && !value.trim().isEmpty() && gender == null) {
+            throw new BusinessException(MessageCodeEnum.PARAM_ERROR, "性别字段不合法");
+        }
+        return gender;
     }
 }

@@ -4,6 +4,7 @@ import com.dailystar.component.AuthContextHolder;
 import com.dailystar.dto.AuthCurrentUserResponse;
 import com.dailystar.dto.AuthLoginRequest;
 import com.dailystar.dto.AuthLoginResponse;
+import com.dailystar.dto.AuthProfileUpdateRequest;
 import com.dailystar.dto.AuthRegisterRequest;
 import com.dailystar.model.ApiResponse;
 import com.dailystar.service.AuthService;
@@ -14,6 +15,7 @@ import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,5 +45,12 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<AuthCurrentUserResponse> currentUser() {
         return ApiResponse.success(authService.currentUser(AuthContextHolder.requireAccountId()));
+    }
+
+    @PutMapping("/profile")
+    @Operation(summary = "更新当前用户基础信息")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<AuthCurrentUserResponse> updateProfile(@Valid @RequestBody AuthProfileUpdateRequest request) {
+        return ApiResponse.success(authService.updateProfile(AuthContextHolder.requireAccountId(), request));
     }
 }

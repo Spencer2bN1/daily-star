@@ -14,4 +14,8 @@ public class AuthCurrentUserResponse {
     private Long accountId;
     private String mobile;
     private String status;
+    private String nickname;
+    private String avatar;
+    private String gender;
+    private boolean profileCompleted;
 }

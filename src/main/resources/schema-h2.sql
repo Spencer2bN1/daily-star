@@ -18,6 +18,17 @@ CREATE TABLE IF NOT EXISTS t_auth_account (
     CONSTRAINT uk_auth_account_mobile UNIQUE (mobile)
 );
 
+CREATE TABLE IF NOT EXISTS t_account_profile (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    account_id BIGINT NOT NULL,
+    nickname VARCHAR(64),
+    avatar VARCHAR(64),
+    gender VARCHAR(32),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    CONSTRAINT uk_account_profile_account UNIQUE (account_id)
+);
+
 CREATE TABLE IF NOT EXISTS t_account_snapshot (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     account_id BIGINT NOT NULL,
