@@ -9,16 +9,18 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthCurrentUserResponse {
+public class CommunityPostResponse {
 
+    private Long postId;
     private Long accountId;
-    private String mobile;
-    private String status;
     private String nickname;
     private String avatar;
     private String gender;
-    private long followerCount;
-    private long followingCount;
-    private long shareCount;
-    private boolean profileCompleted;
+    private String sharedDate;
+    private String goalTitle;
+    private String goalCategory;
+    private String completionStatus;
+    private String rewardText;
+    private Long createdAt;
+    private boolean followedByCurrentUser;
 }

@@ -1,7 +1,9 @@
 package com.dailystar.service.impl;
 
 import com.dailystar.dao.AccountProfileDao;
+import com.dailystar.dao.AccountFollowDao;
 import com.dailystar.dao.AuthAccountDao;
+import com.dailystar.dao.CommunityPostDao;
 import com.dailystar.dto.AuthCurrentUserResponse;
 import com.dailystar.dto.AuthLoginRequest;
 import com.dailystar.dto.AuthLoginResponse;
@@ -29,7 +31,9 @@ import org.springframework.util.StringUtils;
 public class AuthServiceImpl implements AuthService {
 
     private final AccountProfileDao accountProfileDao;
+    private final AccountFollowDao accountFollowDao;
     private final AuthAccountDao authAccountDao;
+    private final CommunityPostDao communityPostDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
 
@@ -144,6 +148,9 @@ public class AuthServiceImpl implements AuthService {
             .nickname(nickname)
             .avatar(avatar)
             .gender(gender)
+            .followerCount(accountFollowDao.countFollowers(account.getId()))
+            .followingCount(accountFollowDao.countFollowing(account.getId()))
+            .shareCount(communityPostDao.countByAccountId(account.getId()))
             .profileCompleted(StringUtils.hasText(nickname) && StringUtils.hasText(avatar))
             .build();
     }

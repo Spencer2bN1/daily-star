@@ -9,6 +9,7 @@ import static com.dailystar.mapper.AccountProfileDynamicSqlSupport.id;
 import static com.dailystar.mapper.AccountProfileDynamicSqlSupport.nickname;
 import static com.dailystar.mapper.AccountProfileDynamicSqlSupport.updatedAt;
 import static org.mybatis.dynamic.sql.SqlBuilder.isEqualTo;
+import static org.mybatis.dynamic.sql.SqlBuilder.isIn;
 
 import com.dailystar.entity.AccountProfileEntity;
 import com.dailystar.enums.GenderEnum;
@@ -78,6 +79,14 @@ public interface AccountProfileDao {
     default Optional<AccountProfileEntity> selectByAccountId(Long currentAccountId) {
         return MyBatis3Utils.selectOne(this::selectOne, selectList, accountProfile,
             c -> c.where(accountId, isEqualTo(currentAccountId)));
+    }
+
+    default List<AccountProfileEntity> selectByAccountIds(List<Long> currentAccountIds) {
+        if (currentAccountIds == null || currentAccountIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return MyBatis3Utils.selectList(this::selectMany, selectList, accountProfile,
+            c -> c.where(accountId, isIn(currentAccountIds)));
     }
 
     default int updateById(AccountProfileEntity row) {

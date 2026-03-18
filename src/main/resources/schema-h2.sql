@@ -68,4 +68,32 @@ CREATE TABLE IF NOT EXISTS t_sync_record (
     CONSTRAINT uk_sync_record_entity UNIQUE (account_id, entity_type, entity_sync_id)
 );
 
+CREATE TABLE IF NOT EXISTS t_community_post (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    account_id BIGINT NOT NULL,
+    nickname_snapshot VARCHAR(64) NOT NULL,
+    avatar_snapshot VARCHAR(64) NOT NULL,
+    gender_snapshot VARCHAR(32),
+    shared_date VARCHAR(16) NOT NULL,
+    goal_title VARCHAR(128) NOT NULL,
+    goal_category VARCHAR(64) NOT NULL,
+    completion_status VARCHAR(32) NOT NULL,
+    reward_text VARCHAR(255),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_post_created ON t_community_post(created_at, id);
+CREATE INDEX IF NOT EXISTS idx_community_post_account_date_goal ON t_community_post(account_id, shared_date, goal_title);
+
+CREATE TABLE IF NOT EXISTS t_account_follow (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    follower_account_id BIGINT NOT NULL,
+    followee_account_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    CONSTRAINT uk_account_follow_pair UNIQUE (follower_account_id, followee_account_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_follow_followee ON t_account_follow(followee_account_id);
+
 CREATE INDEX idx_sync_record_account_version ON t_sync_record(account_id, server_version);

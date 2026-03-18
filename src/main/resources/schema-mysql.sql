@@ -134,3 +134,74 @@ SET @ddl = (
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS t_community_post (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    account_id BIGINT NOT NULL,
+    nickname_snapshot VARCHAR(64) NOT NULL,
+    avatar_snapshot VARCHAR(64) NOT NULL,
+    gender_snapshot VARCHAR(32) NULL,
+    shared_date VARCHAR(16) NOT NULL,
+    goal_title VARCHAR(128) NOT NULL,
+    goal_category VARCHAR(64) NOT NULL,
+    completion_status VARCHAR(32) NOT NULL,
+    reward_text VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+);
+
+SET @ddl = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 't_community_post'
+              AND INDEX_NAME = 'idx_community_post_created'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_community_post_created ON t_community_post(created_at, id)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 't_community_post'
+              AND INDEX_NAME = 'idx_community_post_account_date_goal'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_community_post_account_date_goal ON t_community_post(account_id, shared_date, goal_title)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS t_account_follow (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    follower_account_id BIGINT NOT NULL,
+    followee_account_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL,
+    CONSTRAINT uk_account_follow_pair UNIQUE (follower_account_id, followee_account_id)
+);
+
+SET @ddl = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 't_account_follow'
+              AND INDEX_NAME = 'idx_account_follow_followee'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_account_follow_followee ON t_account_follow(followee_account_id)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
