@@ -18,6 +18,7 @@ public class CommunityUserProfileResponse {
     private Long followerCount;
     private Long followingCount;
     private Long shareCount;
+    private Long likeCount;
     private boolean followedByCurrentUser;
     private boolean self;
 }

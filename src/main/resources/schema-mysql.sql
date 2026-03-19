@@ -135,6 +135,46 @@ PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+CREATE TABLE IF NOT EXISTS t_community_post_like (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    post_id BIGINT NOT NULL,
+    account_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL,
+    CONSTRAINT uk_community_post_like_pair UNIQUE (post_id, account_id)
+);
+
+SET @ddl = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 't_community_post_like'
+              AND INDEX_NAME = 'idx_community_post_like_post'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_community_post_like_post ON t_community_post_like(post_id)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 't_community_post_like'
+              AND INDEX_NAME = 'idx_community_post_like_account_post'
+        ),
+        'SELECT 1',
+        'CREATE INDEX idx_community_post_like_account_post ON t_community_post_like(account_id, post_id)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 CREATE TABLE IF NOT EXISTS t_community_post (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     account_id BIGINT NOT NULL,

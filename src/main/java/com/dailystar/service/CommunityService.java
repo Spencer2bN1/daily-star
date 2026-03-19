@@ -2,6 +2,7 @@ package com.dailystar.service;
 
 import com.dailystar.dto.CommunityFeedResponse;
 import com.dailystar.dto.CommunityFollowActionResponse;
+import com.dailystar.dto.CommunityLikeActionResponse;
 import com.dailystar.dto.CommunityPostResponse;
 import com.dailystar.dto.CommunityShareRequest;
 import com.dailystar.dto.CommunityUserPageResponse;
@@ -18,6 +19,10 @@ public interface CommunityService {
     CommunityFollowActionResponse follow(Long currentAccountId, Long targetAccountId);
 
     CommunityFollowActionResponse unfollow(Long currentAccountId, Long targetAccountId);
+
+    CommunityLikeActionResponse likePost(Long currentAccountId, Long postId);
+
+    CommunityLikeActionResponse unlikePost(Long currentAccountId, Long postId);
 
     CommunityUserPageResponse followers(Long currentAccountId, Long targetAccountId, Integer page, Integer pageSize);
 

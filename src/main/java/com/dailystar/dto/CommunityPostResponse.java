@@ -22,5 +22,7 @@ public class CommunityPostResponse {
     private String completionStatus;
     private String rewardText;
     private Long createdAt;
+    private long likeCount;
+    private boolean likedByCurrentUser;
     private boolean followedByCurrentUser;
 }

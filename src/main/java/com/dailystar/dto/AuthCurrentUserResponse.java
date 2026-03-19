@@ -20,5 +20,6 @@ public class AuthCurrentUserResponse {
     private long followerCount;
     private long followingCount;
     private long shareCount;
+    private long likeCount;
     private boolean profileCompleted;
 }

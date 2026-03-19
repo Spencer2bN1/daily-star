@@ -3,6 +3,7 @@ package com.dailystar.controller;
 import com.dailystar.component.AuthContextHolder;
 import com.dailystar.dto.CommunityFeedResponse;
 import com.dailystar.dto.CommunityFollowActionResponse;
+import com.dailystar.dto.CommunityLikeActionResponse;
 import com.dailystar.dto.CommunityPostResponse;
 import com.dailystar.dto.CommunityShareRequest;
 import com.dailystar.dto.CommunityUserPageResponse;
@@ -63,6 +64,18 @@ public class CommunityController {
     @Operation(summary = "取消关注用户")
     public ApiResponse<CommunityFollowActionResponse> unfollow(@PathVariable("accountId") Long accountId) {
         return ApiResponse.success(communityService.unfollow(AuthContextHolder.requireAccountId(), accountId));
+    }
+
+    @PostMapping("/posts/{postId}/like")
+    @Operation(summary = "点赞社区分享")
+    public ApiResponse<CommunityLikeActionResponse> likePost(@PathVariable("postId") Long postId) {
+        return ApiResponse.success(communityService.likePost(AuthContextHolder.requireAccountId(), postId));
+    }
+
+    @DeleteMapping("/posts/{postId}/like")
+    @Operation(summary = "取消点赞社区分享")
+    public ApiResponse<CommunityLikeActionResponse> unlikePost(@PathVariable("postId") Long postId) {
+        return ApiResponse.success(communityService.unlikePost(AuthContextHolder.requireAccountId(), postId));
     }
 
     @GetMapping("/users/{accountId}/followers")

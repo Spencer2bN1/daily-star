@@ -97,3 +97,14 @@ CREATE TABLE IF NOT EXISTS t_account_follow (
 CREATE INDEX IF NOT EXISTS idx_account_follow_followee ON t_account_follow(followee_account_id);
 
 CREATE INDEX idx_sync_record_account_version ON t_sync_record(account_id, server_version);
+
+CREATE TABLE IF NOT EXISTS t_community_post_like (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    post_id BIGINT NOT NULL,
+    account_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    CONSTRAINT uk_community_post_like_pair UNIQUE (post_id, account_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_post_like_post ON t_community_post_like(post_id);
+CREATE INDEX IF NOT EXISTS idx_community_post_like_account_post ON t_community_post_like(account_id, post_id);

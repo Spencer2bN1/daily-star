@@ -17,7 +17,8 @@ public enum MessageCodeEnum {
     PASSWORD_ERROR(2006, "手机号或密码错误"),
     USER_NOT_FOUND(2007, "用户不存在"),
     PROFILE_INCOMPLETE(2008, "请先完善基础信息"),
-    FOLLOW_SELF_NOT_ALLOWED(2009, "不能关注自己");
+    FOLLOW_SELF_NOT_ALLOWED(2009, "不能关注自己"),
+    COMMUNITY_POST_NOT_FOUND(2010, "分享内容不存在");
 
     private final int code;
     private final String message;

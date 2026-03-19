@@ -3,8 +3,10 @@ package com.dailystar.service.impl;
 import com.dailystar.dao.AccountFollowDao;
 import com.dailystar.dao.AccountProfileDao;
 import com.dailystar.dao.CommunityPostDao;
+import com.dailystar.dao.CommunityPostLikeDao;
 import com.dailystar.dto.CommunityFeedResponse;
 import com.dailystar.dto.CommunityFollowActionResponse;
+import com.dailystar.dto.CommunityLikeActionResponse;
 import com.dailystar.dto.CommunityPostResponse;
 import com.dailystar.dto.CommunityShareRequest;
 import com.dailystar.dto.CommunityUserPageResponse;
@@ -12,9 +14,11 @@ import com.dailystar.dto.CommunityUserProfileResponse;
 import com.dailystar.entity.AccountFollowEntity;
 import com.dailystar.entity.AccountProfileEntity;
 import com.dailystar.entity.CommunityPostEntity;
+import com.dailystar.entity.CommunityPostLikeEntity;
 import com.dailystar.enums.MessageCodeEnum;
 import com.dailystar.exception.BusinessException;
 import com.dailystar.model.AccountMetricCountModel;
+import com.dailystar.model.PostMetricCountModel;
 import com.dailystar.service.CommunityService;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -41,6 +45,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     private final AccountProfileDao accountProfileDao;
     private final CommunityPostDao communityPostDao;
+    private final CommunityPostLikeDao communityPostLikeDao;
     private final AccountFollowDao accountFollowDao;
 
     @Override
@@ -68,7 +73,7 @@ public class CommunityServiceImpl implements CommunityService {
         } else {
             communityPostDao.updateById(post);
         }
-        return toPostResponse(post, profile, false);
+        return toPostResponse(post, profile, false, 0L, false);
     }
 
     @Override
@@ -79,15 +84,24 @@ public class CommunityServiceImpl implements CommunityService {
         List<CommunityPostEntity> rawList = communityPostDao.selectFeedPage(offset, safePageSize + 1L);
         boolean hasMore = rawList.size() > safePageSize;
         List<CommunityPostEntity> pageList = hasMore ? rawList.subList(0, safePageSize) : rawList;
+        List<Long> postIds = extractPostIds(pageList);
         Set<Long> followedIds = new HashSet<Long>(accountFollowDao.selectFolloweeIdsByFollower(currentAccountId));
         Map<Long, AccountProfileEntity> profileMap = buildProfileMap(pageList);
+        Map<Long, Long> likeCountMap = buildPostCountMap(communityPostLikeDao.countByPostIds(postIds));
+        Set<Long> likedPostIds = buildLikedPostSet(currentAccountId, postIds);
         List<CommunityPostResponse> items = new ArrayList<CommunityPostResponse>();
         for (CommunityPostEntity entity : pageList) {
             boolean followed = entity.getAccountId() != null
                 && !entity.getAccountId().equals(currentAccountId)
                 && followedIds.contains(entity.getAccountId());
             AccountProfileEntity latestProfile = entity.getAccountId() == null ? null : profileMap.get(entity.getAccountId());
-            items.add(toPostResponse(entity, latestProfile, followed));
+            items.add(toPostResponse(
+                entity,
+                latestProfile,
+                followed,
+                readPostCount(likeCountMap, entity.getId()),
+                likedPostIds.contains(entity.getId())
+            ));
         }
         return CommunityFeedResponse.builder()
             .page(safePage)
@@ -136,6 +150,40 @@ public class CommunityServiceImpl implements CommunityService {
         return CommunityFollowActionResponse.builder()
             .accountId(targetAccountId)
             .followedByCurrentUser(false)
+            .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CommunityLikeActionResponse likePost(Long currentAccountId, Long postIdValue) {
+        CommunityPostEntity post = communityPostDao.selectById(postIdValue)
+            .orElseThrow(() -> new BusinessException(MessageCodeEnum.COMMUNITY_POST_NOT_FOUND));
+        communityPostLikeDao.selectByPostAndAccount(postIdValue, currentAccountId).orElseGet(() -> {
+            CommunityPostLikeEntity like = CommunityPostLikeEntity.builder()
+                .postId(postIdValue)
+                .accountId(currentAccountId)
+                .createdAt(LocalDateTime.now())
+                .build();
+            communityPostLikeDao.insertSelective(like);
+            return like;
+        });
+        return CommunityLikeActionResponse.builder()
+            .postId(postIdValue)
+            .accountId(post.getAccountId())
+            .likedByCurrentUser(true)
+            .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CommunityLikeActionResponse unlikePost(Long currentAccountId, Long postIdValue) {
+        CommunityPostEntity post = communityPostDao.selectById(postIdValue)
+            .orElseThrow(() -> new BusinessException(MessageCodeEnum.COMMUNITY_POST_NOT_FOUND));
+        communityPostLikeDao.deleteByPostAndAccount(postIdValue, currentAccountId);
+        return CommunityLikeActionResponse.builder()
+            .postId(postIdValue)
+            .accountId(post.getAccountId())
+            .likedByCurrentUser(false)
             .build();
     }
 
@@ -210,9 +258,10 @@ public class CommunityServiceImpl implements CommunityService {
         long followerCount = readCount(buildCountMap(accountFollowDao.countFollowersByAccountIds(Collections.singletonList(targetAccountId))), targetAccountId);
         long followingCount = readCount(buildCountMap(accountFollowDao.countFollowingByAccountIds(Collections.singletonList(targetAccountId))), targetAccountId);
         long shareCount = readCount(buildCountMap(communityPostDao.countByAccountIds(Collections.singletonList(targetAccountId))), targetAccountId);
+        long likeCount = readCount(buildCountMap(communityPostLikeDao.countReceivedLikesByAccountIds(Collections.singletonList(targetAccountId))), targetAccountId);
         boolean self = currentAccountId != null && currentAccountId.equals(targetAccountId);
         boolean followed = !self && accountFollowDao.selectByPair(currentAccountId, targetAccountId).isPresent();
-        return buildUserProfileResponse(targetAccountId, profile, followerCount, followingCount, shareCount, followed, self);
+        return buildUserProfileResponse(targetAccountId, profile, followerCount, followingCount, shareCount, likeCount, followed, self);
     }
 
     private CommunityUserProfileResponse buildUserProfileResponse(
@@ -229,6 +278,7 @@ public class CommunityServiceImpl implements CommunityService {
                 -1,
                 -1,
                 -1,
+                -1,
                 followed,
                 self
         );
@@ -240,6 +290,7 @@ public class CommunityServiceImpl implements CommunityService {
         long followerCount,
         long followingCount,
         long shareCount,
+        long likeCount,
         boolean followed,
         boolean self
     ) {
@@ -251,12 +302,19 @@ public class CommunityServiceImpl implements CommunityService {
             .followerCount(followerCount)
             .followingCount(followingCount)
             .shareCount(shareCount)
+            .likeCount(likeCount)
             .followedByCurrentUser(followed)
             .self(self)
             .build();
     }
 
-    private CommunityPostResponse toPostResponse(CommunityPostEntity entity, AccountProfileEntity profile, boolean followed) {
+    private CommunityPostResponse toPostResponse(
+        CommunityPostEntity entity,
+        AccountProfileEntity profile,
+        boolean followed,
+        long likeCount,
+        boolean likedByCurrentUser
+    ) {
         String nickname = profile != null && StringUtils.hasText(profile.getNickname())
             ? profile.getNickname().trim()
             : defaultNickname(entity.getNicknameSnapshot());
@@ -278,6 +336,8 @@ public class CommunityServiceImpl implements CommunityService {
             .completionStatus(entity.getCompletionStatus())
             .rewardText(entity.getRewardText())
             .createdAt(toMillis(entity.getCreatedAt()))
+            .likeCount(likeCount)
+            .likedByCurrentUser(likedByCurrentUser)
             .followedByCurrentUser(followed)
             .build();
     }
@@ -355,6 +415,16 @@ public class CommunityServiceImpl implements CommunityService {
         return accountIds;
     }
 
+    private List<Long> extractPostIds(List<CommunityPostEntity> posts) {
+        List<Long> postIds = new ArrayList<Long>(posts.size());
+        for (CommunityPostEntity entity : posts) {
+            if (entity.getId() != null) {
+                postIds.add(entity.getId());
+            }
+        }
+        return postIds;
+    }
+
     private List<Long> extractAccountIds(List<AccountFollowEntity> followEntities, boolean followerSide) {
         List<Long> accountIds = new ArrayList<Long>(followEntities.size());
         for (AccountFollowEntity entity : followEntities) {
@@ -374,8 +444,24 @@ public class CommunityServiceImpl implements CommunityService {
         return countMap;
     }
 
+    private Map<Long, Long> buildPostCountMap(List<PostMetricCountModel> rows) {
+        Map<Long, Long> countMap = new HashMap<Long, Long>();
+        if (rows == null) {
+            return countMap;
+        }
+        for (PostMetricCountModel row : rows) {
+            countMap.put(row.getPostId(), row.getCountValue());
+        }
+        return countMap;
+    }
+
     private long readCount(Map<Long, Long> countMap, Long accountId) {
         Long value = countMap.get(accountId);
+        return value == null ? 0L : value.longValue();
+    }
+
+    private long readPostCount(Map<Long, Long> countMap, Long postIdValue) {
+        Long value = countMap.get(postIdValue);
         return value == null ? 0L : value.longValue();
     }
 
@@ -384,5 +470,12 @@ public class CommunityServiceImpl implements CommunityService {
             return Collections.emptySet();
         }
         return new HashSet<Long>(accountFollowDao.selectFolloweeIdsByFollowerAndTargets(currentAccountId, accountIds));
+    }
+
+    private Set<Long> buildLikedPostSet(Long currentAccountId, List<Long> postIds) {
+        if (currentAccountId == null || postIds == null || postIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<Long>(communityPostLikeDao.selectLikedPostIdsByAccount(currentAccountId, postIds));
     }
 }

@@ -4,6 +4,7 @@ import com.dailystar.dao.AccountProfileDao;
 import com.dailystar.dao.AccountFollowDao;
 import com.dailystar.dao.AuthAccountDao;
 import com.dailystar.dao.CommunityPostDao;
+import com.dailystar.dao.CommunityPostLikeDao;
 import com.dailystar.dto.AuthCurrentUserResponse;
 import com.dailystar.dto.AuthLoginRequest;
 import com.dailystar.dto.AuthLoginResponse;
@@ -34,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final AccountFollowDao accountFollowDao;
     private final AuthAccountDao authAccountDao;
     private final CommunityPostDao communityPostDao;
+    private final CommunityPostLikeDao communityPostLikeDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
 
@@ -151,6 +153,7 @@ public class AuthServiceImpl implements AuthService {
             .followerCount(accountFollowDao.countFollowers(account.getId()))
             .followingCount(accountFollowDao.countFollowing(account.getId()))
             .shareCount(communityPostDao.countByAccountId(account.getId()))
+            .likeCount(communityPostLikeDao.countReceivedLikesByAccountId(account.getId()))
             .profileCompleted(StringUtils.hasText(nickname) && StringUtils.hasText(avatar))
             .build();
     }
